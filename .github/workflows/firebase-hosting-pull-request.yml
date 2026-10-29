@@ -1,0 +1,61 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Pipeline de PREVIEW: cada Pull Request se despliega en un "preview channel"
+#  de Firebase Hosting (URL propia, temporal, aislada de producción).
+# ─────────────────────────────────────────────────────────────────────────────
+name: Preview en Pull Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write # la action comenta la URL del preview en el PR
+
+# Nivel Destacado: Concurrencia con cancelación automática si se pushea dos veces seguidas al mismo PR
+concurrency:
+  group: preview-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_and_preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Trazabilidad de versión inyectada en el build (SHA de PR, nombre de rama y timestamp)
+      - name: Build (export estático)
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_BUILD_SHA: ${{ github.event.pull_request.head.sha }}
+          NEXT_PUBLIC_BUILD_REF: ${{ github.head_ref }}
+          NEXT_PUBLIC_BUILD_TIME: ${{ github.event.pull_request.updated_at }}
+
+      # Despliegue a canal efímero con expiración (ej. 3d)
+      - name: Deploy a preview channel
+        id: deploy_preview
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PRACTICA_CICD_CURSOS }}
+          projectId: practica-cicd-cursos
+          expires: 3d
+
+      # Nivel Destacado: Gate de verificación sobre el preview desplegado
+      - name: Gate de verificación sobre preview (validar headers HTTP)
+        run: node scripts/check-headers.mjs "${{ steps.deploy_preview.outputs.details_url }}"

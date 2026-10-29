@@ -1,0 +1,63 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Pipeline de PRODUCCIÓN: lo que se mergea a `main` se publica en el canal
+#  `live` de Firebase Hosting.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Deploy a producción
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+# Nivel Destacado: Concurrencia sin cancelación para que los despliegues hagan cola sin cortarse a la mitad
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    # Nivel Destacado: Asociación al GitHub Environment "production"
+    environment:
+      name: production
+      url: https://practica-cicd-cursos.web.app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Trazabilidad de versión inyectada en el build (SHA de main, ref_name y commit timestamp)
+      - name: Build (export estático)
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+          NEXT_PUBLIC_BUILD_SHA: ${{ github.sha }}
+          NEXT_PUBLIC_BUILD_REF: ${{ github.ref_name }}
+          NEXT_PUBLIC_BUILD_TIME: ${{ github.event.head_commit.timestamp }}
+
+      # Despliegue al canal live de producción
+      - name: Deploy al canal live
+        id: deploy_live
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PRACTICA_CICD_CURSOS }}
+          projectId: practica-cicd-cursos
+          channelId: live
+
+      # Verificación post-deploy en producción
+      - name: Verificación post-deploy en producción
+        run: node scripts/check-headers.mjs "https://practica-cicd-cursos.web.app"
