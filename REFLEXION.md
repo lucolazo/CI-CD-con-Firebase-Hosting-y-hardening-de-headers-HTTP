@@ -9,13 +9,13 @@
 
 ## 1. Entregables
 
-| #   | Entregable                                                  | Valor / Enlace                                                                                                                                                                   |
-| --- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Link al repo (público)                                      | [https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP](https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP) |
-| 2   | URL de producción                                           | `https://practica-cicd-cursos.web.app`                                                                                                                                           |
-| 3   | Link al PR mergeado con comentario del bot y URL de preview | PR #1 (hardening): https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP/pull/1 · PR #2 (título, A6): https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP/pull/2                                                                                  |
-| 4   | Salida de `check-headers.mjs` antes (B1) y después (B5)     | Registradas en la sección 2 de este documento                                                                                                                                     |
-| 5   | Respuestas a las preguntas de reflexión                     | Respondidas en la sección 3 de este documento                                                                                                                                    |
+| #   | Entregable                                                  | Valor / Enlace                                                                                                                                                                                                               |
+| --- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Link al repo (público)                                      | [https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP](https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP)                                                     |
+| 2   | URL de producción                                           | `https://practica-cicd-cursos.web.app`                                                                                                                                                                                       |
+| 3   | Link al PR mergeado con comentario del bot y URL de preview | PR #1 (hardening): https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP/pull/1 · PR #2 (título, A6): https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP/pull/2 |
+| 4   | Salida de `check-headers.mjs` antes (B1) y después (B5)     | Registradas en la sección 2 de este documento                                                                                                                                                                                |
+| 5   | Respuestas a las preguntas de reflexión                     | Respondidas en la sección 3 de este documento                                                                                                                                                                                |
 
 ---
 
@@ -109,15 +109,15 @@ En el navegador del preview: la imagen de portada se ve, el filtro de `/cursos` 
 
 ## 3. Ciclo completo y rollback (A6)
 
-| Paso | Evidencia |
-|---|---|
-| Primer deploy a `live` (sin headers) | Commit `9e31aa5`. Firebase: versión `9c6c1f`, 29/10/26 19:22. |
-| PR #1 (hardening) mergeado | Merge commit `b54eca9`. Footer de producción: `Versión b54eca9`, `Rama main`. Firebase: versión `3acaa7`, 20:27. |
-| PR #2 (título) abierto | Rama `feat/titulo`, commit `0fbafac`. El preview `pr2-feat-titulo` mostró el título nuevo ("Catálogo de Cursos 2026") mientras producción seguía con el título viejo y `b54eca9`: los entornos están aislados. |
-| PR #2 mergeado | Footer de producción: `Versión 84eecfa`, `Rama main`, título "Catálogo de Cursos 2026". Firebase: versión `cf5da8`, 20:41. |
-| Rollback desde la consola de Firebase | Hosting → Release history → rollback a la versión `3acaa7`. Queda registrado en el historial como una nueva versión `3acaa7` (29/10/26 20:51) hecha por `anaacolazo@gmail.com`. Producción volvió a mostrar el título original, "Bienvenidos al Catálogo de Cursos". |
-| Promoción de preview a live, sin recompilar | `npx firebase hosting:clone practica-cicd-cursos:pr2-feat-titulo practica-cicd-cursos:live` → `Site practica-cicd-cursos channel pr2-feat-titulo has been cloned to site practica-cicd-cursos channel live.` |
-| Footer de producción tras el clone | Título "Catálogo de Cursos 2026", `Versión 0fbafac`, `Rama feat/titulo`, Build: 2026-10-29T23:38:03Z. Coincide con el commit de la rama del PR #2 y no con el merge commit de `main` (`84eecfa`), lo que confirma que no hubo recompilación. |
+| Paso                                        | Evidencia                                                                                                                                                                                                                                                            |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Primer deploy a `live` (sin headers)        | Commit `9e31aa5`. Firebase: versión `9c6c1f`, 29/10/26 19:22.                                                                                                                                                                                                        |
+| PR #1 (hardening) mergeado                  | Merge commit `b54eca9`. Footer de producción: `Versión b54eca9`, `Rama main`. Firebase: versión `3acaa7`, 20:27.                                                                                                                                                     |
+| PR #2 (título) abierto                      | Rama `feat/titulo`, commit `0fbafac`. El preview `pr2-feat-titulo` mostró el título nuevo ("Catálogo de Cursos 2026") mientras producción seguía con el título viejo y `b54eca9`: los entornos están aislados.                                                       |
+| PR #2 mergeado                              | Footer de producción: `Versión 84eecfa`, `Rama main`, título "Catálogo de Cursos 2026". Firebase: versión `cf5da8`, 20:41.                                                                                                                                           |
+| Rollback desde la consola de Firebase       | Hosting → Release history → rollback a la versión `3acaa7`. Queda registrado en el historial como una nueva versión `3acaa7` (29/10/26 20:51) hecha por `anaacolazo@gmail.com`. Producción volvió a mostrar el título original, "Bienvenidos al Catálogo de Cursos". |
+| Promoción de preview a live, sin recompilar | `npx firebase hosting:clone practica-cicd-cursos:pr2-feat-titulo practica-cicd-cursos:live` → `Site practica-cicd-cursos channel pr2-feat-titulo has been cloned to site practica-cicd-cursos channel live.`                                                         |
+| Footer de producción tras el clone          | Título "Catálogo de Cursos 2026", `Versión 0fbafac`, `Rama feat/titulo`, Build: 2026-10-29T23:38:03Z. Coincide con el commit de la rama del PR #2 y no con el merge commit de `main` (`84eecfa`), lo que confirma que no hubo recompilación.                         |
 
 **Qué muestra la trazabilidad:** el footer permite saber exactamente qué commit está en cada entorno. Tras el `hosting:clone`, producción sirve el build del preview, compilado con el commit de la rama (`0fbafac`) y no con el merge commit de `main` (`84eecfa`). El contenido es equivalente, pero el SHA del footer cambia, lo que prueba que no hubo recompilación: se promovió el mismo artefacto que se había revisado en el preview.
 
@@ -242,7 +242,7 @@ _Adicionales configurados para nivel Destacado:_
 
 **Respuesta:**
 
-- **Assets versionados (`/_next/static/**`):**  
+- **Assets versionados (`/\_next/static/**`):**  
 Next.js compila los bundles de JavaScript, estilos CSS y chunks asignándoles un nombre único basado en el hash del contenido (por ejemplo: `chunks/1l60h6e6h2_ti.css`). Si el código fuente cambia, el hash resultante en el nombre del archivo será obligatoriamente distinto. Como el contenido de una URL dada es completamente inmutable en el tiempo, puede almacenarse en la memoria caché del navegador y en los servidores de borde de la CDN por un año entero (`Cache-Control: public, max-age=31536000, immutable`). Esto elimina descargas innecesarias y maximiza la velocidad de carga.
 - **Documentos HTML (`/`, `/cursos`):**  
   Los archivos HTML son la "raíz de navegación" que referencia a los assets versionados mediante etiquetas `<script src="...">` y `<link rel="stylesheet" href="...">`. Si el HTML quedara cacheado por un período prolongado, cuando el equipo realice un nuevo despliegue o un rollback de emergencia, los usuarios seguirían viendo la versión antigua almacenada en su navegador sin enterarse del cambio. Por lo tanto, el HTML debe servirse con `Cache-Control: public, max-age=0, must-revalidate` (o `no-cache`), forzando al navegador a realizar una validación condicional (`ETag` / `If-None-Match`) contra la CDN en cada visita antes de usar la copia local.
@@ -298,3 +298,120 @@ Para eliminar `'unsafe-inline'` en un entorno de export estático, se puede inte
    script-src 'self' 'sha256-abc...' 'sha256-xyz...';
    ```
 5. Esto permite que el navegador ejecute con total rigurosidad únicamente los scripts inline generados legítimamente por el compilador, neutralizando cualquier intento de inyección XSS de atacantes.
+
+---
+
+---
+
+# Informe de Práctica · Clase 2 (lunes) · SQL Connect: modelo relacional y autorización
+
+**Asignatura:** Programación Avanzada · 2026  
+**Alumno / Equipo:** Ana Lucía Colazo  
+**Proyecto Firebase:** `practica-cicd-cursos` · **Servicio SQL Connect:** `catalogo` (conector `cursos`, región `us-east4`)
+
+## C1. Qué se implementó
+
+| TODO | Archivo                            | Resolución                                                                                                                                                       |
+| ---- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L1   | `dataconnect/schema/schema.gql`    | `Matricula @table(key: ["alumno", "curso"])` con `alumno: Alumno!`, `curso: Curso!` y `fecha: Timestamp! @default(expr: "request.time")`.                        |
+| L2   | `dataconnect/cursos/mutations.gql` | `Inscribirme($cursoId: UUID!) @auth(level: USER)` con `matricula_upsert(data: { alumnoId_expr: "auth.uid", cursoId: $cursoId })`.                                |
+| L3   | `dataconnect/cursos/queries.gql`   | `MisInscripciones @auth(level: USER)` con `alumno(key: { id_expr: "auth.uid" })` y `matriculas: matriculas_on_alumno { fecha curso { id titulo nivel horas } }`. |
+| L4   | `dataconnect/cursos/queries.gql`   | `ListAlumnos` pasó de `PUBLIC` a `NO_ACCESS`.                                                                                                                    |
+| L5   | `dataconnect/cursos/mutations.gql` | `DarmeDeBaja($cursoId: UUID!) @auth(level: USER)` con `matricula_delete(key: { alumnoId_expr: "auth.uid", cursoId: $cursoId })`.                                 |
+| L6   | `firebase.json`                    | `connect-src 'self' https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebasedataconnect.googleapis.com`.                       |
+| L7   | consola / CLI                      | Pendiente de ejecutar con mi cuenta (ver C4).                                                                                                                    |
+
+## C2. Auditoría `npm run atacar`
+
+> Pegar acá la salida **real** de cada corrida (con `npm run emulators` y `npm run seed` activos).
+
+**Antes de corregir L4** (`ListAlumnos` como `PUBLIC`): se espera que el control "Datos personales" figure como ✘ y que termine con `❌ 1 vulnerabilidad(es)`.
+
+Auditoría de SQL Connect · proyecto practica-cicd-cursos · emuladores locales
+
+✔ ListCursos responde sin login (7 cursos) — público por diseño
+✘ ListAlumnos devuelve datos personales SIN login
+Ejemplo filtrado: {"email":"ana@ejemplo.test","id":"seed-uid-ana","nombre":"Ana Ficticia"}
+✔ Inscribirme rechazada sin login
+unauthenticated: this operation requires a signed-in user
+✔ Inscribirme es idempotente (repetir no falla)
+✔ MisInscripciones solo devuelve lo del usuario que llama
+✔ B no puede dar de baja a A
+✔ DarmeDeBaja borra la inscripción del usuario que llama
+
+❌ 1 vulnerabilidad(es) · 0 pendiente(s)
+
+**Después de corregir (L1–L5 + `ListAlumnos` en `NO_ACCESS`):** se espera `✅ Todos los controles pasaron`.
+
+Auditoría de SQL Connect · proyecto practica-cicd-cursos · emuladores locales
+
+✔ ListCursos responde sin login (7 cursos) — público por diseño
+✔ ListAlumnos rechazada para un cliente
+unauthorized: you are not authorized to perform this operation
+✔ Inscribirme rechazada sin login
+unauthenticated: this operation requires a signed-in user
+✔ Inscribirme es idempotente (repetir no falla)
+✔ MisInscripciones solo devuelve lo del usuario que llama
+✔ B no puede dar de baja a A
+✔ DarmeDeBaja borra la inscripción del usuario que llama
+
+✅ Todos los controles pasaron
+
+### L4 · Justificación de la corrección
+
+- _¿Quién podía ejecutarla?_ Cualquiera, incluso sin login: bastaba con la config pública del bundle.
+- _¿Qué devolvía?_ `id` (UID de Firebase), `nombre` y `email` de **todos** los alumnos.
+- _¿Qué tipo de dato es?_ Datos personales (PII). Una fuga así habilita phishing, enumeración de usuarios e incumplimiento de normativa de protección de datos personales.
+- _Decisión:_ `NO_ACCESS`, el nivel más restrictivo, porque ninguna pantalla de esta app necesita listar alumnos. El comentario "lo necesita el panel de admin" no justifica exponerla a todo internet.
+- _Panel de admin sin exponer datos:_ correrlo en un entorno de confianza (Cloud Function / backend con Admin SDK, o `firebase dataconnect:execute`), que ejecuta con privilegios de administrador y no pasa por `@auth`. Si hace falta autenticar admins, exigir un _custom claim_ `admin` verificado del lado del servidor. Alternativa de mínimo privilegio: una operación `USER` que devuelva solo los campos necesarios (p. ej. cantidad de inscriptos por curso) sin email.
+
+## C3. CSP (L6)
+
+Dominios que usa la app en producción (revisar en Network/consola con `npm run build && npm run serve`):
+
+| Origen                                       | Para qué                                                             |
+| -------------------------------------------- | -------------------------------------------------------------------- |
+| `https://identitytoolkit.googleapis.com`     | Firebase Auth: alta, login y consulta de usuario (email/contraseña). |
+| `https://securetoken.googleapis.com`         | Firebase Auth: renovación del ID token.                              |
+| `https://firebasedataconnect.googleapis.com` | SQL Connect: `executeQuery` / `executeMutation`.                     |
+
+- No se usa `https://*.googleapis.com`: autorizaría fetch/XHR hacia **cualquier** API de Google (Storage, Drive, Firestore de otros proyectos, etc.), y ese comodín sirve para exfiltrar datos si hay un XSS. Con orígenes exactos, la superficie queda limitada a tres hosts.
+- En `lib/firebase.ts` se usa `initializeAuth` sin `popupRedirectResolver` (solo email/contraseña): así el SDK no abre el iframe de `authDomain` ni carga `apis.google.com`, y no hace falta ampliar `frame-src` ni `script-src`.
+- El resto de la política de la clase 1 no cambió.
+
+## C4. Producción (L7)
+
+Comandos a ejecutar (una sola vez por proyecto, usa la prueba sin costo de Cloud SQL):
+
+```bash
+npx firebase dataconnect:sql:diff            # revisar la migración antes de aplicar
+npx firebase deploy --only dataconnect       # crea la instancia catalogo-fdc y migra el esquema
+npx firebase dataconnect:execute dataconnect/seed_data.gql
+```
+
+Frontend: rama → Pull Request → preview → merge (pipeline de la clase 1). **Antes del build de producción hay que completar `apiKey` y `appId` en `lib/firebase-config.ts`** con los valores de la app web de la consola.
+
+- URL de producción: `https://practica-cicd-cursos.web.app`
+- PR del cambio de CSP: _(pegar link)_
+
+> Nota: `seed_data.gql` carga dos alumnos ficticios; en producción conviene ejecutarlo solo para los cursos o borrar esos alumnos después.
+
+## C5. Preguntas de reflexión
+
+**1. ¿Por qué ninguna operación recibe el id del alumno? ¿Qué es IDOR y cómo lo evita `auth.uid`?**  
+Si una operación recibiera `$alumnoId`, el cliente decidiría sobre qué alumno actúa, y el cliente es código público que cualquiera puede reescribir. IDOR (_Insecure Direct Object Reference_, hoy _Broken Object Level Authorization_, OWASP API1) es justamente eso: acceder a objetos de otro usuario cambiando un identificador, porque el servidor no verifica que sea dueño. `auth.uid` sale del ID token firmado por Firebase Auth y lo resuelve el servidor: el cliente no puede falsearlo ni elegirlo, así que cada operación queda atada al usuario que llama (`alumnoId_expr: "auth.uid"`, `key: { id_expr: "auth.uid" }`).
+
+**2. `ListCursos` es `PUBLIC` y `ListAlumnos` terminó en `NO_ACCESS`. ¿Qué criterio? ¿Cómo haría el panel de admin?**  
+Criterio: nivel mínimo según la sensibilidad del dato. El catálogo es información pública por diseño (`PUBLIC`, justificado con `insecureReason`). Los datos de alumnos son personales: nadie desde el cliente (`NO_ACCESS`). El panel de admin debe correr del lado servidor con Admin SDK / `dataconnect:execute` (privilegios de administrador), o exponer una operación `USER` restringida con un claim `admin` verificado y que devuelva solo lo imprescindible.
+
+**3. Ventaja de la clave primaria compuesta frente a validar duplicados en el cliente.**  
+La garantiza la base de datos, atómicamente: ninguna ruta de código (otra pestaña, un script del atacante, una condición de carrera, un bug) puede insertar el par duplicado. Validar en el cliente es evitable y sufre _race conditions_ (dos clics simultáneos). Además no hace falta una columna `id` extra ni un índice único aparte. Y las claves foráneas añaden integridad referencial.
+
+**4. La config de Firebase es pública. ¿Por qué no compromete la base? ¿Qué capa falta?**  
+Porque la `apiKey` solo identifica el proyecto; no concede permisos. Lo que protege los datos es Auth (identidad) + `@auth` de cada operación + que solo existan operaciones con nombre (no hay SQL arbitrario). Lo que falta es **Firebase App Check**: atestiguar que las llamadas vienen de _mi_ app (reCAPTCHA Enterprise/v3 en web) y no de un script que reutiliza la config; sumado a cuotas y límites de abuso (cualquiera aún podría crear cuentas e inscribirse en masa).
+
+**5. SQL Connect vs. una API REST propia (Express + `pg`).**  
+_Gana:_ sin servidor que mantener ni desplegar; esquema y operaciones declarativos con migraciones; autorización junto a cada operación; sin inyección SQL por diseño; SDK tipado generable; integración con Auth; costo cero en Spark durante la prueba. _Pierde:_ flexibilidad (lógica de negocio compleja, validaciones personalizadas, integraciones, transacciones arbitrarias); control total del SQL y de la infraestructura; portabilidad (acoplamiento a Firebase/GCP); y la prueba sin costo vence a los 90 días (luego hace falta Blaze). Frente a Firestore Rules, es relacional y tiene la autorización por operación, no por documento.
+
+**6. ¿Por qué no alcanzó la CSP de la clase 1 y por qué dominios exactos en `connect-src`?**  
+Con `connect-src 'self'` el navegador bloquea todo `fetch`/XHR a otros orígenes, y ahora la app depende de tres servicios de Google (síntoma: `Refused to connect`). Hay que listar dominios exactos por mínimo privilegio: un comodín como `*.googleapis.com` permitiría enviar datos a cualquier API de Google, incluidas cuentas controladas por un atacante, anulando el valor de la CSP ante un XSS.

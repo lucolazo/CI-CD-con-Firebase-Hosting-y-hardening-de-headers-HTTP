@@ -1,0 +1,62 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  Queries del conector `cursos`.
+#  Cada operación DEBE declarar quién puede ejecutarla con @auth:
+#    PUBLIC     → cualquiera, incluso sin login (exige justificar con insecureReason)
+#    USER       → cualquier usuario autenticado con Firebase Auth
+#    NO_ACCESS  → nadie desde el cliente (solo herramientas de admin)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Catálogo: lo puede ver cualquiera.
+query ListCursos
+@auth(
+  level: PUBLIC
+  insecureReason: "El catálogo de cursos es información pública."
+) {
+  cursos(orderBy: { titulo: ASC }) {
+    id
+    titulo
+    nivel
+    horas
+    descripcion
+    cupo
+  }
+}
+
+# L4 · Operación heredada, CORREGIDA.
+#
+# Auditoría: estaba como PUBLIC, o sea que CUALQUIERA (sin login, solo con la config pública
+# del bundle) podía listar id, nombre y email de todos los alumnos: datos personales (PII).
+# "Lo necesita el panel de administración" no justifica abrirla a todo internet.
+#
+# Corrección: NO_ACCESS → ningún cliente (ni anónimo ni autenticado) puede ejecutarla.
+# Un panel de admin NO debe llamarla desde el navegador: debe correr en un entorno de
+# confianza con el Admin SDK / `firebase dataconnect:execute` (privilegios de administrador,
+# que no pasan por @auth), idealmente detrás de un custom claim `admin` verificado en servidor.
+query ListAlumnos @auth(level: NO_ACCESS) {
+  alumnos {
+    id
+    nombre
+    email
+  }
+}
+
+# L3 · Inscripciones del usuario que llama.
+#
+# La operación NO recibe el id del alumno: lo toma del token con `id_expr: "auth.uid"`.
+# Si recibiera `$alumnoId`, cualquier usuario podría pedir las inscripciones de otro
+# cambiando ese valor (IDOR / Broken Object Level Authorization, OWASP API1).
+# Forma de respuesta: { alumno: { nombre, matriculas: [ { fecha, curso: {...} } ] } }
+query MisInscripciones @auth(level: USER) {
+  alumno(key: { id_expr: "auth.uid" }) {
+    nombre
+    matriculas: matriculas_on_alumno {
+      fecha
+      curso {
+        id
+        titulo
+        nivel
+        horas
+      }
+    }
+  }
+}
