@@ -381,20 +381,29 @@ Dominios que usa la app en producción (revisar en Network/consola con `npm run 
 
 ## C4. Producción (L7)
 
-Comandos a ejecutar (una sola vez por proyecto, usa la prueba sin costo de Cloud SQL):
+Comandos ejecutados (una sola vez por proyecto, usa la prueba sin costo de Cloud SQL):
 
 ```bash
-npx firebase dataconnect:sql:diff            # revisar la migración antes de aplicar
-npx firebase deploy --only dataconnect       # crea la instancia catalogo-fdc y migra el esquema
+npx firebase deploy --only dataconnect       # crea el servicio catalogo y la instancia catalogo-fdc
 npx firebase dataconnect:execute dataconnect/seed_data.gql
+npx firebase dataconnect:sql:diff            # verificación posterior de la migración
 ```
+
+**Orden real y hallazgos:**
+
+- Un `dataconnect:sql:diff` previo al deploy falló con `404 parent resource not found`: el servicio `catalogo` todavía no existía en producción, así que no había contra qué comparar.
+- El deploy creó el servicio, desplegó esquema y conector `cursos`, e inició la creación de la instancia Cloud SQL `catalogo-fdc` (prueba sin costo). El CLI avisó `Skip SQL schema migration because Cloud SQL is still being created`: mientras tanto SQL Connect guarda los datos en una base temporal y migra al terminar.
+- Un `sql:diff` posterior, mientras la instancia se creaba, dio `Cloud SQL Instance catalogo-fdc is being created`.
+- Cuando la instancia terminó, el diff devolvió: `Database schema of catalogo-fdc:fdcdb matches SQL Connect Schema exactly.` Es decir, el esquema real coincide con `schema.gql`. Se esperan las tablas `curso` (PK uuid), `alumno` (PK text) y `matricula` con PK compuesta (alumno_id, curso_id), claves foráneas hacia ambas y `fecha` con default del servidor.
+- El seed se ejecutó dos veces (antes y después de la migración); al usar `upsert` no duplica datos.
+- La prueba sin costo comenzó el 30/10/2026 y dura 90 días; al vencer la instancia se suspende y, sin pasar a Blaze, se borra.
 
 Frontend: rama → Pull Request → preview → merge (pipeline de la clase 1). **Antes del build de producción hay que completar `apiKey` y `appId` en `lib/firebase-config.ts`** con los valores de la app web de la consola.
 
 - URL de producción: `https://practica-cicd-cursos.web.app`
 - PR del cambio de CSP: _(pegar link)_
 
-> Nota: `seed_data.gql` carga dos alumnos ficticios; en producción conviene ejecutarlo solo para los cursos o borrar esos alumnos después.
+> Nota: `seed_data.gql` carga dos alumnos ficticios (`seed-uid-ana`, `seed-uid-bruno`) también en producción. No se pueden leer desde el navegador porque `ListAlumnos` es `NO_ACCESS`, pero conviene borrarlos o ejecutar un seed solo de cursos.
 
 ## C5. Preguntas de reflexión
 
