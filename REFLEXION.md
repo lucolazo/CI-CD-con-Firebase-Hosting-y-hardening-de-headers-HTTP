@@ -401,7 +401,7 @@ npx firebase dataconnect:sql:diff            # verificación posterior de la mig
 Frontend: rama → Pull Request → preview → merge (pipeline de la clase 1). **Antes del build de producción hay que completar `apiKey` y `appId` en `lib/firebase-config.ts`** con los valores de la app web de la consola.
 
 - URL de producción: `https://practica-cicd-cursos.web.app`
-- PR del cambio de CSP: _(pegar link)_
+- PR del cambio de CSP: `https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP/pull/4`
 
 > Nota: `seed_data.gql` carga dos alumnos ficticios (`seed-uid-ana`, `seed-uid-bruno`) también en producción. No se pueden leer desde el navegador porque `ListAlumnos` es `NO_ACCESS`, pero conviene borrarlos o ejecutar un seed solo de cursos.
 
