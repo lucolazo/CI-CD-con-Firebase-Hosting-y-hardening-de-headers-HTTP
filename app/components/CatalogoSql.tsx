@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Curso } from "@/lib/cursos";
-import { inscribirme, listarCursos, mensajeDeError } from "@/lib/sqlconnect";
+import { inscribirme, listarCursos, mensajeDeError, registrarAlumno } from "@/lib/sqlconnect";
 import { useUsuario } from "@/lib/useUsuario";
 import FiltroCursos from "./FiltroCursos";
 
@@ -25,6 +25,10 @@ export default function CatalogoSql() {
     setEnCurso(curso.id);
     setAviso(null);
     try {
+      // Garantiza que exista la fila de Alumno (la clave foránea de Matricula la exige).
+      // UpsertAlumno es idempotente: si el perfil ya existe, solo lo actualiza.
+      const nombre = (usuario?.displayName || usuario?.email?.split("@")[0] || "Alumno").slice(0, 80);
+      await registrarAlumno(nombre);
       await inscribirme(curso.id);
       setAviso(`✔ Quedaste inscripto/a en "${curso.titulo}".`);
     } catch (e) {

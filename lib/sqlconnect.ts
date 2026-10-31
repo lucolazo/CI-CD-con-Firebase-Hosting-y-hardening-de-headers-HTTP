@@ -1,6 +1,6 @@
 "use client";
 
-import { executeMutation, executeQuery, mutationRef, queryRef } from "firebase/data-connect";
+import { executeMutation, executeQuery, mutationRef, queryRef, QueryFetchPolicy } from "firebase/data-connect";
 import { firebase } from "./firebase";
 import type { Curso } from "./cursos";
 
@@ -40,7 +40,11 @@ export async function listarCursos(): Promise<Curso[]> {
 
 export async function misInscripciones(): Promise<Inscripcion[]> {
   const { dc } = firebase();
-  const { data } = await executeQuery(queryRef<MisInscripcionesData>(dc, "MisInscripciones"));
+  // SERVER_ONLY: las inscripciones cambian con cada alta/baja, así que nunca se sirven desde la
+  // caché del SDK (si no, "Mis inscripciones" muestra datos viejos tras inscribirse o darse de baja).
+  const { data } = await executeQuery(queryRef<MisInscripcionesData>(dc, "MisInscripciones"), {
+    fetchPolicy: QueryFetchPolicy.SERVER_ONLY,
+  });
   return data.alumno?.matriculas ?? [];
 }
 
