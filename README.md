@@ -155,3 +155,19 @@ Formato de un header en `firebase.json`:
 - **La imagen de portada no carga:** CSP bloqueando `img-src`.
 - **Cambié `firebase.json` y no veo los headers:** ¿reconstruiste y reiniciaste el emulador?
   ¿Estás mirando una respuesta cacheada? Probá con `curl -I` o en una ventana privada.
+
+
+---
+
+## Clase 2 · SQL Connect (lunes)
+
+Ver `dataconnect/` (esquema + conector `cursos`), `scripts/atacar.mjs` y la sección *Clase 2* de `REFLEXION.md`.
+
+```bash
+npm run emulators   # 1 · Auth + SQL Connect locales
+npm run seed        # 2 · datos iniciales
+npm run dev         # 3 · app en http://localhost:3000
+npm run atacar      # 4 · auditoría de seguridad
+```
+
+Antes del build de producción completá `apiKey` y `appId` en `lib/firebase-config.ts`.
