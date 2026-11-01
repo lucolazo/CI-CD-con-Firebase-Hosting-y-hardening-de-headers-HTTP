@@ -24,3 +24,6 @@ dataconnect/.dataconnect/
 .env*.local
 .DS_Store
 pglite-debug.log
+
+# Emulador de Firestore
+firestore-debug.log

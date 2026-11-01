@@ -424,3 +424,80 @@ _Gana:_ sin servidor que mantener ni desplegar; esquema y operaciones declarativ
 
 **6. ¿Por qué no alcanzó la CSP de la clase 1 y por qué dominios exactos en `connect-src`?**  
 Con `connect-src 'self'` el navegador bloquea todo `fetch`/XHR a otros orígenes, y ahora la app depende de tres servicios de Google (síntoma: `Refused to connect`). Hay que listar dominios exactos por mínimo privilegio: un comodín como `*.googleapis.com` permitiría enviar datos a cualquier API de Google, incluidas cuentas controladas por un atacante, anulando el valor de la CSP ante un XSS.
+
+---
+
+# Informe de Práctica · Clase 3 · Cloud Firestore: datos en tiempo real, modelo documental y reglas de seguridad
+
+## Práctica 4 · Firestore
+
+### Qué se implementó
+
+| Entregable                                                   | Archivo                                                                                             |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Capa de acceso a datos (escribir, escuchar, agregar)         | `lib/resenas.ts`                                                                                    |
+| Formulario + lista en vivo + resumen                         | `app/components/ResenasCurso.tsx` (montado en cada tarjeta de `/cursos` con el botón _Ver reseñas_) |
+| Reglas de seguridad                                          | `firestore.rules`                                                                                   |
+| Índice compuesto (`puntaje` ↑, `creadaEn` ↓)                 | `firestore.indexes.json`                                                                            |
+| Tests de reglas (8 del enunciado + 9 propios)                | `tests/reglas.test.mjs` → `npm run test:reglas`                                                     |
+| Emulador de Firestore (puerto 8080), claves `firestore`, CSP | `firebase.json`                                                                                     |
+
+Decisiones y mejoras respecto del código base del enunciado:
+
+- **Mi reseña tiene su propio listener** (`escucharMiResena`, un documento). Con el código del enunciado, `mia` se buscaba en la lista; pero la lista está limitada a 20 y puede estar filtrada por 5 estrellas. Si mi reseña era de 4 estrellas y activaba el filtro, la UI creía que no existía, mandaba `serverTimestamp()` sobre un documento existente y las reglas la rechazaban (`permission-denied`, porque `creadaEn` cambiaría). Costo: +1 lectura por visita.
+- **El resumen se recalcula con una firma del contenido confirmado**, no con `resenas.length`: con `limit(20)` la cantidad se estanca en 20 y el promedio dejaba de actualizarse; además se ignoran las escrituras locales pendientes (el servidor todavía no las tiene) y se refresca tras guardar o borrar.
+- **Estados de escritura pendiente** (`hasPendingWrites` con `includeMetadataChanges`): la reseña propia aparece con “(enviando…)” hasta que el servidor confirma.
+- Botón **Borrar mi reseña**, `autor` recortado a 80 caracteres (el límite de las reglas), suscripciones canceladas en el `useEffect` y errores mostrados en pantalla (índice faltante, permiso denegado).
+- La inicialización de Firestore reutiliza `firebase()` de la clase 2 (misma `app`/`auth`) y tolera la recarga en caliente de `npm run dev`.
+- El script `npm run emulators` ahora levanta también Firestore.
+
+### Evidencia
+
+1. **`npm run test:reglas` en verde** (17 de 17 tests: los 8 del enunciado y 9 propios):
+
+   ![Tests de reglas en verde](docs/capturas/tests-verde.png)
+
+2. **Prueba de "hacerlo fallar":** cambié en `firestore.rules` `puntaje <= 5` por `puntaje <= 6`. Se puso en rojo el test _"puntaje fuera de rango o con decimales se rechaza"_, porque la escritura con `puntaje: 6` se aceptó cuando debía rechazarse. Después revertí el cambio y volvieron los 17 en verde.
+
+   ![Tests de reglas con un test en rojo](docs/capturas/tests-rojo.png)
+
+3. **Tiempo real entre dos navegadores**
+
+   Ana publica una reseña desde su navegador:
+
+   ![Ana publica su reseña](docs/capturas/resenia-antes.png)
+
+   Pepito, en otra ventana (incógnito, con otra cuenta), la ve aparecer sin recargar la página:
+
+   ![Pepito la ve en vivo](docs/capturas/resenia-despues.png)
+
+4. **PR con reglas, índice y CSP:** https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP/pull/6
+
+Comandos de producción (Paso 9):
+
+```bash
+npm run test:reglas
+npx firebase deploy --only firestore:rules,firestore:indexes
+```
+
+Hallazgo esperable: en el emulador la consulta “Solo 5 estrellas” funciona sin índice; en producción falla con `FAILED_PRECONDITION` hasta que el índice declarado en `firestore.indexes.json` termina de construirse (consola → Firestore → Índices).
+
+### Preguntas de reflexión
+
+**1. ¿Por qué el id del documento es el UID? ¿Qué tendrías que agregar si usaras ids aleatorios con `addDoc`?**  
+Porque convierte la regla de negocio “una reseña por persona y curso” en una propiedad de la estructura: escribir de nuevo apunta al mismo documento y lo actualiza, no puede haber duplicados. Además las reglas pueden validar la autoría comparando el id con `request.auth.uid` (`esDuenio(uid)`), sin leer nada más. Con ids aleatorios (`addDoc`) habría que (a) guardar un campo `uid` en el documento y exigir en las reglas `request.resource.data.uid == request.auth.uid` (y que no cambie en `update`); (b) evitar duplicados: Firestore no tiene restricciones de unicidad, así que habría que consultar antes de crear (con riesgo de condición de carrera) o usar una transacción/Cloud Function; y (c) para editar o borrar, buscar primero el documento con una consulta `where("uid", "==", ...)` (más lecturas y un índice).
+
+**2. La reseña guarda una copia del nombre del autor. ¿Qué ganás y qué perdés? ¿Cómo resolverías el cambio de nombre?**  
+_Gano:_ mostrar la lista con una sola consulta, sin una lectura extra por reseña para buscar el nombre (en NoSQL no hay JOINs): menos lecturas, menos latencia, menos cuota. _Pierdo:_ consistencia: si la persona cambia su nombre, sus reseñas viejas conservan el anterior, y el dato duplicado puede quedar desactualizado (o ser falseado por el cliente, aunque las reglas limitan su forma y tamaño). Para resolverlo: un trigger de servidor (Cloud Function al cambiar el perfil) que actualice con una consulta de grupo de colecciones (`collectionGroup("resenas").where("uid"...)`, lo que exige guardar el uid como campo) las reseñas del autor; o aceptar el “instante de la reseña” como dato histórico, que a veces es lo deseado. Es una decisión de diseño: se paga escritura/complejidad a cambio de lecturas baratas.
+
+**3. ¿Qué diferencia hay entre `resource.data` y `request.resource.data`? Ejemplo de regla que use ambos.**  
+`resource.data` es el documento **como está guardado ahora** (no existe al crear); `request.resource.data` es el documento **como quedaría** si la escritura se acepta (el resultado de aplicar el `set`/`update`/`merge`). Ejemplo, de este mismo proyecto, en la regla de `update`: `request.resource.data.creadaEn == resource.data.creadaEn` — la fecha resultante debe ser igual a la que ya estaba guardada, o sea, inmutable.
+
+**4. ¿Por qué la regla de creación exige `creadaEn == request.time` en lugar de confiar en la fecha del cliente?**  
+El reloj del cliente puede estar mal configurado o ser manipulado a propósito (alguien podría poner una reseña “de 2020” o de mañana para aparecer siempre primera en `orderBy("creadaEn")`). `serverTimestamp()` hace que el servidor sustituya el valor por su hora, y `request.time` es esa misma hora dentro de la regla; al exigir igualdad, la única fecha aceptada es la del servidor. Y como además se ordena por ese campo, un valor confiable mantiene el orden de la lista honesto.
+
+**5. ¿Qué limitación tiene `getAggregateFromServer` y cómo afecta la experiencia? ¿Qué alternativas hay?**  
+No es en tiempo real: devuelve una foto en el momento de la consulta, no admite `onSnapshot`, y tampoco funciona offline (siempre va al servidor). En la UI, la lista se actualiza sola pero el “★ 4.3 (7)” del título puede quedar desactualizado cuando otra persona publica; por eso se vuelve a pedir cuando cambia el contenido confirmado de la lista. Cuesta una lectura por cada 1.000 entradas de índice recorridas. Alternativas: mantener un documento resumen (`cursos/{id}.resumen = {cantidad, suma}`) actualizado por el servidor (Cloud Function o transacción) y escucharlo con `onSnapshot` — es lo que se hace en la Práctica 5 —; o hacer polling periódico de la agregación; o calcular en el cliente sobre las reseñas descargadas (solo viable con pocos documentos, y limitado por `limit(20)`).
+
+**6. Para inscripciones con cupo máximo, ¿Firestore o SQL Connect?**  
+SQL Connect (PostgreSQL). Un cupo es una invariante global que exige leer-contar-escribir de forma atómica: en SQL se expresa con una transacción (`@transaction`) y/o restricciones (clave primaria compuesta `(alumno_id, curso_id)` contra duplicados, claves foráneas para integridad referencial), y la base garantiza que dos inscripciones simultáneas no superen el cupo. Las Security Rules de Firestore evalúan **un** documento por vez, no pueden contar cuántos documentos hay en una colección ni garantizar unicidad; para un cupo habría que usar transacciones del cliente (o Cloud Functions), con más complejidad y menos garantías. Además, lo que vimos en la clase 2 (autorización con `@auth` por operación, operaciones con nombre en el servidor) encaja con un dato sensible y relacional. Firestore brilla donde el valor es el tiempo real y el acceso directo del cliente (reseñas en vivo, chats), no donde se necesita integridad entre entidades.
