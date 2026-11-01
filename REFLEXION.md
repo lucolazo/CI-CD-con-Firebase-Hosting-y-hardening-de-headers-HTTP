@@ -471,7 +471,7 @@ Decisiones y mejoras respecto del código base del enunciado:
 
    ![Pepito la ve en vivo](docs/capturas/resenia-despues.png)
 
-4. **PR mergeado con reglas, índice y CSP**: _(pegar URL)_.
+4. **PR con reglas, índice y CSP:** https://github.com/lucolazo/CI-CD-con-Firebase-Hosting-y-hardening-de-headers-HTTP/pull/6
 
 Comandos de producción (Paso 9):
 
