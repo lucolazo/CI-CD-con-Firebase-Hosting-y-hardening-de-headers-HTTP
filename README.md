@@ -171,3 +171,37 @@ npm run atacar      # 4 · auditoría de seguridad
 ```
 
 Antes del build de producción completá `apiKey` y `appId` en `lib/firebase-config.ts`.
+
+
+---
+
+## Práctica 4 · Cloud Firestore (reseñas en tiempo real)
+
+Cada tarjeta de `/cursos` tiene un botón **Ver reseñas**: alumnos con sesión iniciada pueden publicar, editar y
+borrar su reseña (1–5 estrellas + comentario); todos las ven actualizarse en vivo. El resumen (promedio y
+cantidad) usa una consulta de agregación.
+
+| Pieza | Rol |
+|---|---|
+| `lib/resenas.ts` | Única capa que habla con Firestore (escribir, escuchar, agregar) |
+| `app/components/ResenasCurso.tsx` | Formulario, lista en vivo, filtro “solo 5 estrellas” y resumen |
+| `firestore.rules` | Seguridad declarativa: dueño, lista blanca de campos, tipos, rangos, fecha inmutable |
+| `firestore.indexes.json` | Índice compuesto `puntaje` ↑ + `creadaEn` ↓ (el emulador no lo exige, producción sí) |
+| `tests/reglas.test.mjs` | Tests de las reglas contra el emulador |
+
+Requisitos: Node.js 24 LTS (`@firebase/rules-unit-testing@6`) y Java 21+.
+
+```bash
+npm install                 # actualiza package-lock.json con @firebase/rules-unit-testing
+npm run emulators           # auth + dataconnect + firestore  (UI en http://127.0.0.1:4000)
+npm run dev                 # en otra terminal
+npm run test:reglas         # levanta un emulador efímero de Firestore, corre los tests y lo apaga
+```
+
+Producción:
+
+```bash
+npx firebase deploy --only firestore:rules,firestore:indexes   # el índice tarda unos minutos
+```
+
+La CSP de `firebase.json` incluye `https://firestore.googleapis.com` en `connect-src`.

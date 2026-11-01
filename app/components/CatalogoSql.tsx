@@ -6,6 +6,7 @@ import type { Curso } from "@/lib/cursos";
 import { inscribirme, listarCursos, mensajeDeError, registrarAlumno } from "@/lib/sqlconnect";
 import { useUsuario } from "@/lib/useUsuario";
 import FiltroCursos from "./FiltroCursos";
+import ResenasCurso from "./ResenasCurso";
 
 type Estado = { tipo: "cargando" } | { tipo: "error"; mensaje: string } | { tipo: "ok"; cursos: Curso[] };
 
@@ -14,6 +15,8 @@ export default function CatalogoSql() {
   const [estado, setEstado] = useState<Estado>({ tipo: "cargando" });
   const [aviso, setAviso] = useState<string | null>(null);
   const [enCurso, setEnCurso] = useState<string | null>(null);
+  // Curso cuyas reseñas están desplegadas (el listener de Firestore solo existe mientras está abierto).
+  const [conResenas, setConResenas] = useState<string | null>(null);
 
   useEffect(() => {
     listarCursos()
@@ -57,15 +60,29 @@ export default function CatalogoSql() {
       )}
       <FiltroCursos
         cursos={estado.cursos}
-        accion={(c) =>
-          usuario ? (
-            <button type="button" className="button button--small" disabled={enCurso === c.id} onClick={() => onInscribirme(c)}>
-              {enCurso === c.id ? "Inscribiendo…" : "Inscribirme"}
-            </button>
-          ) : (
-            <small className="hint">Ingresá para inscribirte</small>
-          )
-        }
+        claseCard={(c) => (c.id === conResenas ? "card--abierta" : "")}
+        accion={(c) => (
+          <>
+            <div className="card__acciones">
+              {usuario ? (
+                <button type="button" className="button button--small" disabled={enCurso === c.id} onClick={() => onInscribirme(c)}>
+                  {enCurso === c.id ? "Inscribiendo…" : "Inscribirme"}
+                </button>
+              ) : (
+                <small className="hint">Ingresá para inscribirte</small>
+              )}
+              <button
+                type="button"
+                className="button button--small button--ghost"
+                aria-expanded={c.id === conResenas}
+                onClick={() => setConResenas(c.id === conResenas ? null : c.id)}
+              >
+                {c.id === conResenas ? "Ocultar reseñas" : "Ver reseñas"}
+              </button>
+            </div>
+            {c.id === conResenas && <ResenasCurso cursoId={c.id} uid={usuario?.uid ?? null} />}
+          </>
+        )}
       />
     </>
   );

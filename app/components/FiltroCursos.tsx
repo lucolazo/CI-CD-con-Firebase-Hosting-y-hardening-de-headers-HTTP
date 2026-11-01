@@ -9,9 +9,11 @@ interface Props {
   cursos: Curso[];
   /** Contenido extra al pie de cada tarjeta (por ejemplo, el botón "Inscribirme"). */
   accion?: (curso: Curso) => ReactNode;
+  /** Clase CSS extra para la tarjeta (p. ej. para ensancharla cuando muestra reseñas). */
+  claseCard?: (curso: Curso) => string;
 }
 
-export default function FiltroCursos({ cursos, accion }: Props) {
+export default function FiltroCursos({ cursos, accion, claseCard }: Props) {
   const [nivel, setNivel] = useState<Nivel | "todos">("todos");
   const [texto, setTexto] = useState("");
 
@@ -56,7 +58,7 @@ export default function FiltroCursos({ cursos, accion }: Props) {
 
       <ul className="grilla">
         {visibles.map((c) => (
-          <li key={c.id} className="card">
+          <li key={c.id} className={`card ${claseCard?.(c) ?? ""}`.trim()}>
             <span className={`badge badge--${c.nivel}`}>{c.nivel}</span>
             <h2>{c.titulo}</h2>
             <p>{c.descripcion}</p>
